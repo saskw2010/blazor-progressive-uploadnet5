@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,7 +13,6 @@ using Microsoft.JSInterop;
 using BlazorProgressiveUpload.Client;
 using BlazorProgressiveUpload.Client.Shared;
 using System.IO;
-using System.Net;
 using System.Threading;
 
 namespace BlazorProgressiveUpload.Client.Pages
@@ -27,8 +25,7 @@ namespace BlazorProgressiveUpload.Client.Pages
 
         private Stream _fileStream = null;
         private string _selectedFileName = null;
-        private long _uploaded = 0;
-        private double _percentage = 0;
+        
         public void OnChooseFile(InputFileChangeEventArgs e)
         {
             // Get the selected file   
@@ -49,72 +46,33 @@ namespace BlazorProgressiveUpload.Client.Pages
             }
         }
 
-        public async Task SubmitFormAsycn()
+        private long _uploaded = 0;
+        private double _percentage = 0;
+        // The method that will submit the file to the server
+        public async Task SubmitFileAsync()
         {
+            // Create a mutlipart form data content which will hold the key value of the file that must be of type StreamContent
             var content = new MultipartFormDataContent();
-            var streamContent = new ProgressiveStreamContent(_fileStream, 100024, (u, p) =>
+
+            // Create an instance of ProgressiveStreamContent that we just created and we will pass the stream of the file for it
+            // and the 40096 which are 40KB per packet and the third argument which as a callback for the OnProgress event (u, p) are u = Uploaded bytes and P is the percentage
+            var streamContent = new ProgressiveStreamContent(_fileStream, 40096, (u, p) =>
             {
+                // Set the values of the _uploaded & _percentage fields to the value provided from the event
                 _uploaded = u;
                 _percentage = p;
+
+                // Call StateHasChanged() to notify the component about this change to re-render the UI
                 StateHasChanged();
             });
+
+            // Add the streamContent with the name to the FormContent variable
             content.Add(streamContent, "File");
 
+            // Submit the request 
             var response = await Client.PostAsync("/weatherforecast", streamContent);
-
-            if (response.IsSuccessStatusCode)
-            {
-
-            }
-            else
-            {
-
-            }
         }
 
-
-    }
-
-    public class ProgressiveStreamContent : StreamContent
-    {
-
-        private readonly Stream _stream;
-        private readonly int _maxBuffer = 1024 * 4; 
-
-        public ProgressiveStreamContent(Stream stream, int maxBuffer, Action<int, double> onProgress) : base(stream)
-        {
-            _stream = stream;
-            _maxBuffer = maxBuffer;
-            OnProgress += onProgress;
-        }
-
-        public event Action<int, double> OnProgress;
-
-
-        protected async override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-        {
-            var buffer = new byte[_maxBuffer];
-            var totalLength = _stream.Length;
-            long uploaded = 0;
-
-            while (true)
-            {
-                using (_stream)
-                {
-                    var length = await _stream.ReadAsync(buffer, 0, _maxBuffer);
-                    if (length <= 0)
-                    {
-                        break;
-                    }
-
-                    uploaded += length;
-                    var perentage = Convert.ToDouble(uploaded * 100 / _stream.Length);
-                    OnProgress?.Invoke((int)uploaded, perentage);
-                    await Task.Delay(500);
-                    await stream.WriteAsync(buffer);
-                }
-            }
-        }
 
     }
 }

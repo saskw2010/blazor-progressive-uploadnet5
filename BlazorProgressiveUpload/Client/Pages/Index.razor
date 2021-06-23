@@ -8,9 +8,12 @@
         <div class="form-group">  
             <label>File</label>  
             <InputFile OnChange="OnChooseFile" />  
-            <p>@(_uploaded / 1024)KB / @(_fileStream?.Length / 1024)KB</p>  
-            <div style="display:inline-block;height:3px;width: @_percentage%;background-color: green" />
+            @* Show the value of the _uploaded variable divided to 1024 to show the amount in KB and also we use _fileStream?.Length / 1024 to show the total amount of KBs  *@
+            <p><span style="color:dodgerblue">@(_uploaded / 1024)KB</span> / @(_fileStream?.Length / 1024)KB</p>  
+            @* Show the percentage of uploaded amount of of the total *@
+            <p style="color:red">Percentage: @_percentage %</p>
         </div>  
-        <button type="submit" class="btn btn-success btn-block m-1" @onclick="SubmitFormAsycn">Upload</button>   
+        @* Call the SubmitFileAsync in the @onclick event *@
+        <button type="submit" class="btn btn-success btn-block m-1" @onclick="SubmitFileAsync">Upload</button>   
     </div>  
 </div>  
